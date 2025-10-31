@@ -3,8 +3,8 @@
 import HeaderSetter from "@/components/common/header-setter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSearchParams, useRouter } from "next/navigation";
-import React, { useState } from "react";
-import { ChevronRight, IndianRupee, LockKeyhole, ShieldCheck, Tag } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronRight, IndianRupee, LockKeyhole, ShieldCheck, Tag, Loader2 } from "lucide-react";
 
 import { TiBusinessCard } from "react-icons/ti";
 import { CiCreditCard1 } from "react-icons/ci";
@@ -15,7 +15,7 @@ import CardForm from "./_components/CardForm";
 import CODInfo from "./_components/CODInfo";
 import NetBankingForm from "./_components/NetBankingForm";
 import { useMutation } from '@tanstack/react-query';
-import { initiatePayment } from '@/lib/services/payment';
+import { initiatePayment, verifyPaymentStatus } from '@/lib/services/payment';
 import { toast } from 'sonner';
 import { AxiosResponse } from "axios";
 import useDeviceDetector from "@/hooks/use-device-detector";
@@ -59,6 +59,11 @@ export default function CheckoutPage() {
     const [selectedMethod, setSelectedMethod] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // UPI Intent specific states
+    const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+    const [paymentInitiated, setPaymentInitiated] = useState(false);
+    const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
     const orderId = params.get("orderId") ?? "ORD-DEMO";
     const amount = Number(params.get("amount") ?? 0);
     const fee = Number(params.get("fee") ?? 0);
@@ -66,19 +71,115 @@ export default function CheckoutPage() {
     const items = Number(params.get("items") ?? 1);
     const { isMobile, deviceOS } = useDeviceDetector();
 
+    // Check for pending UPI intent payments on component mount
+    useEffect(() => {
+        const checkPendingPayment = async () => {
+            const storedOrderId = localStorage.getItem("pendingOrderId");
+            const storedPaymentMode = localStorage.getItem("paymentMode");
+
+            if (storedOrderId && storedPaymentMode === "UPI_INTENT") {
+                setPendingOrderId(storedOrderId);
+                setPaymentInitiated(true);
+                setIsCheckingStatus(true);
+
+                // Start polling for payment status
+                await pollPaymentStatus(storedOrderId);
+            }
+        };
+
+        checkPendingPayment();
+    }, []);
+
+    // Poll payment status for UPI intent
+    const pollPaymentStatus = async (orderId: string, maxAttempts: number = 6) => {
+        let attempts = 0;
+        const pollInterval = 3000; // 3 seconds
+
+        const poll = async () => {
+            try {
+                attempts++;
+                const response = await verifyPaymentStatus(orderId);
+                const state = response.data?.state || response.data?.data?.state || "PENDING";
+
+                // Terminal states
+                if (["SUCCESS", "COMPLETED", "FAILED", "CANCELLED", "EXPIRED"].includes(state)) {
+                    // Clear pending payment
+                    localStorage.removeItem("pendingOrderId");
+                    localStorage.removeItem("paymentMode");
+
+                    setIsCheckingStatus(false);
+                    setPaymentInitiated(false);
+                    setPendingOrderId(null);
+
+                    // Redirect to result page
+                    router.push(`/payment/result?orderId=${orderId}&amount=${amount}&status=${state === "SUCCESS" || state === "COMPLETED" ? "success" : "failed"
+                        }`);
+                    return;
+                }
+
+                // Continue polling if not terminal state and attempts remaining
+                if (attempts < maxAttempts) {
+                    setTimeout(poll, pollInterval);
+                } else {
+                    // Max attempts reached
+                    setIsCheckingStatus(false);
+                    toast.warning("Payment status is still pending. Please check status manually.");
+                }
+            } catch (error) {
+                console.error("Error polling payment status:", error);
+                if (attempts < maxAttempts) {
+                    setTimeout(poll, pollInterval);
+                } else {
+                    setIsCheckingStatus(false);
+                    toast.error("Unable to verify payment status. Please check manually.");
+                }
+            }
+        };
+
+        await poll();
+    };
+
     const initiatePaymentMutation = useMutation({
         mutationFn: (body: any) => initiatePayment(body),
         onSuccess: (res: AxiosResponse) => {
             const data = res.data;
             setIsProcessing(false);
-            if (selectedMethod === 0 && ["UPI_INTENT", "UPI_COLLECT"].includes(paymentMode)) {
+
+            if (selectedMethod === 0 && paymentMode === "UPI_COLLECT") {
                 router.push(`/upi-checkout?orderId=${orderId}&amount=${amount}&merchantName=${"CGPEY"}&expiresIn=${120}`);
+            } else if (selectedMethod === 0 && paymentMode === "UPI_INTENT") {
+                const intentUrl = data?.data?.intentUrl;
+
+                if (intentUrl && isMobile) {
+                    // Store pending payment info
+                    localStorage.setItem("pendingOrderId", orderId);
+                    localStorage.setItem("paymentMode", "UPI_INTENT");
+
+                    setIsProcessing(false);
+                    setPaymentInitiated(true);
+                    setPendingOrderId(orderId);
+
+                    // Open UPI app
+                    window.location.href = intentUrl;
+
+                    // Start checking status after a delay
+                    setTimeout(() => {
+                        if (localStorage.getItem("pendingOrderId") === orderId) {
+                            setIsCheckingStatus(true);
+                            pollPaymentStatus(orderId);
+                        }
+                    }, 5000);
+                } else {
+                    toast.error("Failed to get UPI intent URL");
+                }
             } else {
                 router.push(data?.data?.redirectUrl);
             }
         },
         onError: (err: any) => {
             setIsProcessing(false);
+            setPaymentInitiated(false);
+            setPendingOrderId(null);
             toast.error(err?.message || 'Payment failed');
         },
     });
@@ -109,9 +210,79 @@ export default function CheckoutPage() {
         initiatePaymentMutation.mutate(body);
     };
 
+    const handleCheckStatus = async () => {
+        const currentOrderId = pendingOrderId || orderId;
+        if (currentOrderId) {
+            setIsCheckingStatus(true);
+            await pollPaymentStatus(currentOrderId, 3);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <HeaderSetter title="Complete Your Purchase" desc={`Order #${orderId}`} />
+
+            {/* Payment Status Overlay */}
+            {(isCheckingStatus || paymentInitiated) && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {paymentInitiated && !isCheckingStatus
+                                ? "Complete Payment in UPI App"
+                                : "Checking Payment Status"}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-6">
+                            {paymentInitiated && !isCheckingStatus
+                                ? "Please complete the payment in your UPI app and return here."
+                                : "Please wait while we verify your payment..."}
+                        </p>
+
+                        {paymentInitiated && !isCheckingStatus && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Tip:</strong> After completing payment, this page will automatically check the status.
+                                </p>
+                            </div>
+                        )}
+
+                        {isCheckingStatus && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                                <div className="flex gap-1">
+                                    <div
+                                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                                        style={{ animationDelay: "0ms" }}
+                                    ></div>
+                                    <div
+                                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                                        style={{ animationDelay: "150ms" }}
+                                    ></div>
+                                    <div
+                                        className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                                        style={{ animationDelay: "300ms" }}
+                                    ></div>
+                                </div>
+                                <span>Verifying with payment gateway</span>
+                            </div>
+                        )}
+
+                        {paymentInitiated && (
+                            <button
+                                onClick={() => {
+                                    setPaymentInitiated(false);
+                                    setIsCheckingStatus(true);
+                                    handleCheckStatus();
+                                }}
+                                className="mt-4 w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                            >
+                                I&apos;ve Completed Payment
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <Card className="hidden sm:block">
                 <CardContent className="flex flex-row items-center justify-between px-6 py-4">

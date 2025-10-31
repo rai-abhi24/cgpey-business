@@ -1,26 +1,27 @@
 import ApiClient from "../client";
+const PG_SERVICE_BASE_URL = "https://pay.cgpey.com";
 
 export async function initiatePayment(payload: any) {
-  const url = `${process.env.PG_SERVICE_BASE_URL}/api/payments`;
+  const url = `${PG_SERVICE_BASE_URL}/api/payments`;
   return ApiClient.raw().post(url, payload);
 }
 
 export async function verifyVPA(payload: any) {
-  const url = `${process.env.PG_SERVICE_BASE_URL}/api/payments/verify-vpa`;
+  const url = `${PG_SERVICE_BASE_URL}/api/payments/verify-vpa`;
   return ApiClient.raw().post(url, payload);
 }
 
 export async function verifyPaymentStatus(payload: any) {
-  const url = `${process.env.PG_SERVICE_BASE_URL}/api/payments/verify`;
+  const url = `${PG_SERVICE_BASE_URL}/api/payments/verify`;
   return ApiClient.raw().post(url, payload);
 }
 
 export async function initiateRefund(payload: { orderId: string, gateway: string, amount: number, refundId: string }) {
-  const url = `${process.env.PG_SERVICE_BASE_URL}/api/payments/refund`;
+  const url = `${PG_SERVICE_BASE_URL}/api/payments/refund`;
   return ApiClient.raw().post(url, payload);
 }
 
 export async function checkRefundStatus(payload: { refundId: string, gateway: string }) {
-  const url = `${process.env.PG_SERVICE_BASE_URL}/api/payments/refund-status`;
+  const url = `${PG_SERVICE_BASE_URL}/api/payments/refund-status`;
   return ApiClient.raw().post(url, payload);
 }

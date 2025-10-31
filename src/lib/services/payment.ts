@@ -1,4 +1,5 @@
 import ApiClient from "../client";
+// const PG_SERVICE_BASE_URL = "http://192.168.1.8:4000";
 const PG_SERVICE_BASE_URL = "https://pay.cgpey.com";
 
 export async function initiatePayment(payload: any) {

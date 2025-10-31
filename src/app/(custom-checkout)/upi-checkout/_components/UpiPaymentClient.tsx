@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { verifyPaymentStatus } from "@/lib/services/payment";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import Lottie from "lottie-react";
 
 const POLL_INTERVAL = 3000;
+const REDIRECT_DELAY = 1500;
 
 const UpiPaymentClient = () => {
     const params = useSearchParams();
@@ -26,71 +27,99 @@ const UpiPaymentClient = () => {
         "pending" | "success" | "failed" | "expired"
     >("pending");
 
-    // Verify payment mutation
     const verifyPaymentMutation = useMutation({
         mutationFn: (body: { orderId: string; gateway: string }) =>
             verifyPaymentStatus(body),
         onSuccess: (res: any) => {
-            const data = res.data;
-            if (data?.data?.state === "COMPLETED") {
+            const state = res?.data?.data?.state;
+            if (state === "COMPLETED") {
                 setPaymentStatus("success");
-            } else if (data?.data?.state === "FAILED") {
+            } else if (state === "FAILED") {
                 setPaymentStatus("failed");
             }
+            // If state is neither COMPLETED nor FAILED, continue polling
         },
         onError: (error: any) => {
+            console.error("Payment verification error:", error);
+            // Don't set payment status to failed on API errors, just log and continue polling
             toast.error(error?.message || "Failed to verify payment");
         },
     });
 
-    // Countdown timer
+    // Timer effect
     useEffect(() => {
         if (paymentStatus !== "pending") return;
-        if (timeLeft <= 0) {
-            setPaymentStatus("expired");
-            return;
-        }
-        const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-        return () => clearInterval(timer);
-    }, [paymentStatus, timeLeft]);
 
-    // Polling
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    setPaymentStatus("expired");
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [paymentStatus]);
+
+    // Polling effect
     useEffect(() => {
         if (paymentStatus !== "pending" || !orderId) return;
-        const poll = setInterval(() => {
-            if (!verifyPaymentMutation.isPending) {
-                verifyPaymentMutation.mutate({ orderId, gateway: "phonepe" });
-            }
-        }, POLL_INTERVAL);
-        return () => clearInterval(poll);
-    }, [paymentStatus, orderId, verifyPaymentMutation]);
 
-    // Redirect after completion
+        // const pollInterval: NodeJS.Timeout;
+        let isMounted = true;
+
+        const pollForPaymentStatus = async () => {
+            if (!isMounted) return;
+
+            try {
+                await verifyPaymentMutation.mutateAsync({
+                    orderId,
+                    gateway: "phonepe",
+                });
+            } catch (err) {
+                console.error("Polling error:", err);
+            }
+        };
+
+        // Poll immediately first time
+        pollForPaymentStatus();
+
+        // Then set up interval
+        const pollInterval = setInterval(pollForPaymentStatus, POLL_INTERVAL);
+
+        return () => {
+            isMounted = false;
+            if (pollInterval) clearInterval(pollInterval);
+        };
+    }, [paymentStatus, orderId]);
+
+    // Redirect effect
     useEffect(() => {
         if (!["success", "failed", "expired"].includes(paymentStatus)) return;
-        verifyPaymentMutation.reset();
 
         const timeout = setTimeout(() => {
             router.replace(
-                `/payment/result?orderId=${orderId}&amount=${amount}&status=${paymentStatus}`
+                `/payment/result?orderId=${encodeURIComponent(orderId)}`
             );
-        }, 1500);
+        }, REDIRECT_DELAY);
 
         return () => clearTimeout(timeout);
-    }, [paymentStatus, router, verifyPaymentMutation, orderId, amount]);
+    }, [paymentStatus, router, orderId, amount]);
 
-    const formatTime = (seconds: number) => {
+    const formatTime = useCallback((seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, "0")}:${secs
             .toString()
             .padStart(2, "0")}`;
-    };
+    }, []);
 
-    const getProgressPercentage = () =>
-        ((expiresIn - timeLeft) / expiresIn) * 100;
+    const getProgressPercentage = useCallback(() => {
+        return Math.min(((expiresIn - timeLeft) / expiresIn) * 100, 100);
+    }, [expiresIn, timeLeft]);
 
-    // ✅ SUCCESS STATE
     if (paymentStatus === "success") {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center px-10 text-center">
@@ -111,7 +140,6 @@ const UpiPaymentClient = () => {
         );
     }
 
-    // ❌ FAILED or EXPIRED STATE
     if (paymentStatus === "failed" || paymentStatus === "expired") {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center px-10 text-center">
@@ -130,7 +158,6 @@ const UpiPaymentClient = () => {
         );
     }
 
-    // ⏳ PENDING STATE
     return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center px-10 text-center">
             <h2 className="text-3xl font-bold mb-6">Pay {displayAmount}</h2>
@@ -140,7 +167,7 @@ const UpiPaymentClient = () => {
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-primary transition-all duration-1000 ease-linear"
-                        style={{ width: `${Math.min(getProgressPercentage(), 100)}%` }}
+                        style={{ width: `${getProgressPercentage()}%` }}
                     />
                 </div>
             </div>
@@ -152,8 +179,14 @@ const UpiPaymentClient = () => {
 
             <div className="space-y-3 text-left max-w-sm mx-auto">
                 <Step number={1} text="Go to your UPI App." />
-                <Step number={2} text={`Select the payment request from ${merchantName}.`} />
-                <Step number={3} text="Enter your UPI PIN and complete the payment." />
+                <Step
+                    number={2}
+                    text={`Select the payment request from ${merchantName}.`}
+                />
+                <Step
+                    number={3}
+                    text="Enter your UPI PIN and complete the payment."
+                />
             </div>
         </div>
     );

@@ -328,14 +328,6 @@ export default function PaymentResultClient() {
                                     <div className="flex justify-center gap-3 pt-4">
                                         <Button
                                             variant="outline"
-                                            onClick={() => (window.location.href = "/")}
-                                            disabled={isFetching}
-                                            className="flex items-center gap-2"
-                                        >
-                                            {"Go to Dashboard"}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
                                             onClick={() => refetchPayment()}
                                             disabled={isFetching}
                                             className="flex items-center gap-2"

@@ -110,7 +110,7 @@ export default function RefundSection({
                         size="sm"
                         disabled={isChecking}
                         onClick={onCheckStatus}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 h-11 bg-green-600 text-white"
                     >
                         {isChecking ? (
                             <>

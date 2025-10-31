@@ -1,13 +1,30 @@
 "use client";
 
 import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
 import { HeaderProvider } from "@/context/header-context";
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-    const token = localStorage.getItem("token");
-    if (!token) redirect("/login");
+    const [isClient, setIsClient] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        // ensure this runs only on client
+        setIsClient(true);
+        const token = localStorage.getItem("token");
+        if (!token) {
+            redirect("/login");
+        } else {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    // while waiting for client-side check
+    if (!isClient || isAuthenticated === null) {
+        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    }
 
     return (
         <main className="flex h-screen">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Loader2,
   QrCode,
@@ -30,7 +30,7 @@ type UpiApp = {
 };
 
 const UpiForm = ({ amount, onSubmit, isProcessing, isMobile, deviceOS }: UpiFormProps) => {
-  const [selectedMode, setSelectedMode] = useState(isMobile ? "upi_apps" : null);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [upiId, setUpiId] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null);
@@ -151,6 +151,12 @@ const UpiForm = ({ amount, onSubmit, isProcessing, isMobile, deviceOS }: UpiForm
   const handleMoreAppsClick = () => {
     window.open("upi://pay", "_blank");
   };
+
+  useEffect(() => {
+    if (isMobile) {
+      setSelectedMode("upi_apps");
+    }
+  }, [isMobile]);
 
   if (!selectedMode) {
     return (

@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     // Send OTP Mutation
     const sendOtpMutation = useMutation({
-        mutationFn: async (phone: string) => {
+        mutationFn: async () => {
             // const res = await fetch("/api/send-otp", {
             //     method: "POST",
             //     headers: { "Content-Type": "application/json" },
@@ -45,8 +45,8 @@ export default function LoginPage() {
 
     // Verify OTP Mutation
     const verifyOtpMutation = useMutation({
-        mutationFn: async (data: { phone: string; otp: string }) => { },
-        onSuccess: (data) => {
+        mutationFn: async () => { },
+        onSuccess: () => {
             toast.success("Login successful!");
             router.push("/");
         },
@@ -57,7 +57,7 @@ export default function LoginPage() {
 
     const handlePhoneSubmit = () => {
         if (phoneNumber.length === 10) {
-            sendOtpMutation.mutate(phoneNumber);
+            sendOtpMutation.mutate();
         } else {
             toast.error("Please enter a valid 10-digit mobile number");
         }
@@ -87,7 +87,7 @@ export default function LoginPage() {
     const handleOtpSubmit = () => {
         const otpString = otp.join("");
         if (otpString.length === 6) {
-            verifyOtpMutation.mutate({ phone: phoneNumber, otp: otpString });
+            verifyOtpMutation.mutate();
         } else {
             toast.error("Please enter complete OTP");
         }
@@ -215,7 +215,7 @@ export default function LoginPage() {
                                         <div className="flex justify-center">
                                             <button
                                                 type="button"
-                                                onClick={() => sendOtpMutation.mutate(phoneNumber)}
+                                                onClick={() => sendOtpMutation.mutate()}
                                                 disabled={sendOtpMutation.isPending}
                                                 className="text-sm text-primary font-medium hover:underline transition-colors"
                                             >

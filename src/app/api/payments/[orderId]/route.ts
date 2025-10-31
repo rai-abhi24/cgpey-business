@@ -8,7 +8,7 @@ import { Payment } from "@/models";
  */
 export async function GET(
     req: Request,
-    { params }: { params: { orderId: string } }
+    { params }: { params: any }
 ) {
     try {
         await connectDB();

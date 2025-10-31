@@ -124,10 +124,6 @@ const PaymentSchema = new Schema<IPayment>(
 /* -------------------------------------------------------------
    5️⃣ Indexes for performance
 ------------------------------------------------------------- */
-PaymentSchema.index({ merchantOrderId: 1, gateway: 1 });
-PaymentSchema.index({ merchantId: 1 });
-PaymentSchema.index({ state: 1, createdAt: -1 });
-PaymentSchema.index({ "refund.state": 1 });
 PaymentSchema.index({ createdAt: -1 });
 
 /* -------------------------------------------------------------

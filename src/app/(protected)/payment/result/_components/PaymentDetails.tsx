@@ -1,6 +1,6 @@
-import { PaymentData } from "../page";
 import { Calendar, CreditCard, Clock } from "lucide-react";
 import DetailItem from "./DetailItem";
+import { PaymentData } from "./PaymentResultClient";
 
 export default function PaymentDetails({
     payment,

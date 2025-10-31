@@ -6,7 +6,7 @@ import { z } from 'zod'
  */
 const envSchema = z.object({
     // Database
-    DATABASE_URL: z.url().min(1),
+    MONGODB_URI: z.url().min(1),
 
     // NextAuth
     NEXTAUTH_URL: z.url().min(1),
@@ -21,11 +21,12 @@ const envSchema = z.object({
     // App config
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     NEXT_PUBLIC_APP_URL: z.url().min(1),
+    PG_SERVICE_BASE_URL: z.string().min(1),
 })
 
 // Validate and parse environment variables
 const envParse = envSchema.safeParse({
-    DATABASE_URL: process.env.DATABASE_URL,
+    MONGODB_URI: process.env.MONGODB_URI,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -34,6 +35,7 @@ const envParse = envSchema.safeParse({
     GITHUB_SECRET: process.env.GITHUB_SECRET,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    PG_SERVICE_BASE_URL: process.env.PG_SERVICE_BASE_URL,
 })
 
 if (!envParse.success) {

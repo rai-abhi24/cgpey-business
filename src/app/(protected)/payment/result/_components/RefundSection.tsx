@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import DetailItem from "./DetailItem";
 import { Clock, CreditCard, Loader2, RefreshCcw } from "lucide-react";
-import { RefundData } from "../page";
+import { RefundData } from "./PaymentResultClient";
 import { Badge } from "@/components/ui/badge";
 
 const TERMINAL_REFUND_STATES = ["COMPLETED", "FAILED", "SUCCESS", "FAILED"];

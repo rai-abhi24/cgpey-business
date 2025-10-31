@@ -1,7 +1,8 @@
+import { env } from "../env";
 import ApiClient from "../client";
 
 export async function initiatePayment(payload: any) {
-  const url = "http://localhost:4000/api/payments";
+  const url = `${env.PG_SERVICE_BASE_URL}/api/payments`;
   return ApiClient.raw().post(url, payload);
 }
 

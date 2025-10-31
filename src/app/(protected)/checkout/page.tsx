@@ -98,7 +98,7 @@ export default function CheckoutPage() {
         const poll = async () => {
             try {
                 attempts++;
-                const response = await verifyPaymentStatus(orderId);
+                const response = await verifyPaymentStatus({ orderId, gateway: "phonepe" });
                 const state = response.data?.state || response.data?.data?.state || "PENDING";
 
                 // Terminal states

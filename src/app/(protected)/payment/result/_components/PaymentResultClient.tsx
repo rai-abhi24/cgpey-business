@@ -11,6 +11,7 @@ import {
     RefreshCcw,
     RotateCcw,
     AlertCircle,
+    Navigation,
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -325,6 +326,14 @@ export default function PaymentResultClient() {
 
                                     {/* Actions */}
                                     <div className="flex justify-center gap-3 pt-4">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => (window.location.href = "/")}
+                                            disabled={isFetching}
+                                            className="flex items-center gap-2"
+                                        >
+                                            {"Go to Dashboard"}
+                                        </Button>
                                         <Button
                                             variant="outline"
                                             onClick={() => refetchPayment()}

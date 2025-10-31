@@ -38,7 +38,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                         <Header />
                     </div>
 
-                    <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+                    <div className="flex-1 p-3 md:p-6 bg-gray-50 overflow-y-auto">
                         <div className="max-h-full">
                             {children}
                         </div>

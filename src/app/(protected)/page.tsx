@@ -54,7 +54,7 @@ export default function DashboardPage() {
                 desc="Welcome to your payment dashboard"
             />
 
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* Left Column - Test Payment Section */}
                     <div className="lg:col-span-2 space-y-6">

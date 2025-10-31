@@ -48,6 +48,7 @@ export default function LoginPage() {
         mutationFn: async () => { },
         onSuccess: () => {
             toast.success("Login successful!");
+            localStorage.setItem("token", "123");
             router.push("/");
         },
         onError: (error: any) => {

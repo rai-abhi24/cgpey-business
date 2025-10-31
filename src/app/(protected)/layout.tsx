@@ -1,11 +1,13 @@
+"use client";
+
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
 import { HeaderProvider } from "@/context/header-context";
 
-export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-    const session = true;
-    if (!session) redirect("/login");
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+    const token = localStorage.getItem("token");
+    if (!token) redirect("/login");
 
     return (
         <main className="flex h-screen">

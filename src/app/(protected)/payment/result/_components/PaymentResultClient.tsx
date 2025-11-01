@@ -70,7 +70,7 @@ interface ApiResponse {
 
 export default function PaymentResultClient() {
     const params = useSearchParams();
-    const orderId = params.get("orderId") ?? "ORD-DEMO";
+    const orderId = params.get("orderId") ?? "";
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
     const {

@@ -30,7 +30,7 @@ export default function DetailItem({
             </span>
 
             <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
-                <div className={`w-full font-mono text-gray-800 break-all ${compact ? 'text-xs sm:text-sm' : 'text-sm'} ${mobile ? 'max-w-[160px] sm:max-w-[200px]' : 'max-w-[280px] sm:max-w-[280px]'}`}>
+                <div className={`w-full font-mono text-gray-800 break-all ${compact ? 'text-xs sm:text-sm' : 'text-sm'} ${mobile ? 'max-w-[200px]' : 'max-w-[280px] sm:max-w-[280px]'}`}>
                     {value}
                 </div>
                 {onCopy && (

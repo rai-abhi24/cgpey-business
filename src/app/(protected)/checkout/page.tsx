@@ -9,7 +9,7 @@ import { ChevronRight, IndianRupee, LockKeyhole, ShieldCheck, Tag, Loader2 } fro
 import { TiBusinessCard } from "react-icons/ti";
 import { CiCreditCard1 } from "react-icons/ci";
 import { BsBank2 } from "react-icons/bs";
-import { RiMoneyRupeeCircleFill } from "react-icons/ri";
+// import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 import UpiForm from "./_components/UpiForm";
 import CardForm from "./_components/CardForm";
 import CODInfo from "./_components/CODInfo";
@@ -41,14 +41,14 @@ export const paymentMethods = [
         icon: <BsBank2 className="text-xl" />,
         desc: "Pay via your bank account",
     },
-    {
-        id: 3,
-        name: "Cash on Delivery",
-        icon: <RiMoneyRupeeCircleFill className="text-xl" />,
-        desc: "Pay when you receive",
-        badge: "₹50 extra",
-        badgeColor: "bg-orange-100 text-orange-700",
-    },
+    // {
+    //     id: 3,
+    //     name: "Cash on Delivery",
+    //     icon: <RiMoneyRupeeCircleFill className="text-xl" />,
+    //     desc: "Pay when you receive",
+    //     badge: "₹50 extra",
+    //     badgeColor: "bg-orange-100 text-orange-700",
+    // },
 ];
 
 export default function CheckoutPage() {

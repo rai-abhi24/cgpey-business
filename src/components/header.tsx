@@ -16,7 +16,7 @@ export default function Header({ title, desc }: any) {
     return (
         <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between p-4 border-b bg-background">
             <div className="flex items-center gap-2">
-                <div className="ml-0 lg:ml-3">
+                <div className="ml-12 lg:ml-3">
                     <p className="text-lg font-semibold">{resolvedTitle}</p>
                     <p className="text-sm text-gray-600">{resolvedDesc}</p>
                 </div>
@@ -71,7 +71,7 @@ function AccountBadge() {
     const identifier = role === "ADMIN" ? "Admin" : session.displayName || session.email || session.phone || "User";
 
     return (
-        <div className="text-left lg:text-right">
+        <div className="hidden sm:flex flex-col items-end text-left lg:text-right">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Signed in as</p>
             <p className="text-sm font-semibold">{identifier}</p>
         </div>

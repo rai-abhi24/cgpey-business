@@ -1,9 +1,10 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,7 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
     SelectContent,
-    SelectItem
+    SelectItem,
 } from "@/components/ui/select";
 import {
     Dialog,
@@ -22,58 +23,74 @@ import {
 } from "@/components/ui/dialog";
 import InputField from "@/components/common/input-field";
 
-export default function AddMerchantDialog({
-    open,
-    setOpen,
-}: {
+type Props = {
     open: boolean;
     setOpen: (open: boolean) => void;
-}) {
+};
+
+export default function AddMerchantDialog({ open, setOpen }: Props) {
     const router = useRouter();
+    const queryClient = useQueryClient();
+
     const [form, setForm] = useState({
-        ownerName: "",
+        merchantName: "",
+        businessName: "",
         email: "",
-        mobileNumber: "",
-        password: "",
-        appName: "",
-        appType: "",
-        vpa: "",
-        merchantDomain: "",
-        ipAddress: "",
+        phone: "",
+        businessEntityType: "",
+        website: "",
         perTransactionLimit: "",
+        callbackUrlUat: "",
+        callbackUrlProd: "",
+        canSwitchMode: "yes", // "yes" | "no"
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const mutation = useMutation({
         mutationFn: async () => {
+            const payload = {
+                merchantName: form.merchantName,
+                businessName: form.businessName,
+                email: form.email,
+                phone: form.phone,
+                businessEntityType: form.businessEntityType,
+                website: form.website,
+                perTransactionLimit: Number(form.perTransactionLimit || 0),
+                callbackUrlUat: form.callbackUrlUat || undefined,
+                callbackUrlProd: form.callbackUrlProd || undefined,
+                canSwitchMode: form.canSwitchMode === "yes",
+            };
+
             const res = await fetch("/api/merchants", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                credentials: "include",
+                body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error("Failed to create merchant");
+
+            if (!res.ok) throw new Error((await res.json()).message || "Failed");
             return res.json();
         },
-        onSuccess: (data) => {
+        onSuccess: () => {
             toast.success("Merchant created successfully 🎉");
-            console.log("Merchant:", data.merchant);
             setOpen(false);
             setForm({
-                ownerName: "",
+                merchantName: "",
+                businessName: "",
                 email: "",
-                mobileNumber: "",
-                password: "",
-                appName: "",
-                appType: "",
-                vpa: "",
-                merchantDomain: "",
-                ipAddress: "",
+                phone: "",
+                businessEntityType: "",
+                website: "",
                 perTransactionLimit: "",
+                callbackUrlUat: "",
+                callbackUrlProd: "",
+                canSwitchMode: "yes",
             });
-            router.push("/merchants");
+            queryClient.invalidateQueries({ queryKey: ["merchants"] });
+            router.refresh();
         },
         onError: (err: any) => {
             toast.error(err.message || "Something went wrong");
@@ -87,138 +104,154 @@ export default function AddMerchantDialog({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Add Merchant</DialogTitle>
-                    <DialogDescription>
-                        Onboard a new merchant account.
-                    </DialogDescription>
+                    <DialogDescription>Onboard a new merchant for pay-ins.</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-                    {/* Owner Name */}
+
+                <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4"
+                >
+                    {/* Basic */}
                     <InputField
-                        label="Owner Name"
-                        name="ownerName"
-                        value={form.ownerName}
+                        label="Merchant Display Name"
+                        name="merchantName"
+                        value={form.merchantName}
                         handleChange={handleChange}
-                        htmlFor="ownerName"
-                        placeholder="Enter owner's name"
+                        htmlFor="merchantName"
+                        placeholder="Eg. My Shop"
                         required
                     />
-                    {/* Email */}
                     <InputField
-                        label="Email"
+                        label="Business Legal Name"
+                        name="businessName"
+                        value={form.businessName}
+                        handleChange={handleChange}
+                        htmlFor="businessName"
+                        placeholder="Eg. My Shop Pvt Ltd"
+                        required
+                    />
+
+                    {/* Contact */}
+                    <InputField
+                        label="Owner Email"
                         name="email"
+                        type="email"
                         value={form.email}
                         handleChange={handleChange}
                         htmlFor="email"
-                        placeholder="Enter owner's email"
+                        placeholder="owner@example.com"
                         required
                     />
-
-                    {/* Mobile */}
                     <InputField
-                        label="Mobile Number"
-                        name="mobileNumber"
+                        label="Owner Mobile"
+                        name="phone"
                         maxLength={10}
-                        value={form.mobileNumber}
+                        value={form.phone}
                         handleChange={handleChange}
-                        htmlFor="mobileNumber"
-                        placeholder="Enter mobile number"
+                        htmlFor="phone"
+                        placeholder="10-digit mobile"
                         required
                     />
 
-                    {/* Password */}
-                    <InputField
-                        label="Password"
-                        name="password"
-                        type="password"
-                        value={form.password}
-                        handleChange={handleChange}
-                        htmlFor="password"
-                        placeholder="Enter password (Min Length: 6)"
-                        required
-                    />
-
-                    {/* App Name */}
-                    <InputField
-                        label="App Name"
-                        name="appName"
-                        value={form.appName}
-                        handleChange={handleChange}
-                        htmlFor="appName"
-                        placeholder="Enter app name"
-                        required
-                    />
-
-                    {/* App Type */}
+                    {/* Entity Type */}
                     <div>
-                        <Label>App Type <span className="text-red-500">&nbsp;*</span></Label>
+                        <Label>
+                            Business Entity Type <span className="text-red-500">*</span>
+                        </Label>
                         <Select
-                            value={form.appType}
-                            onValueChange={(value) => setForm({ ...form, appType: value })}
+                            value={form.businessEntityType}
+                            onValueChange={(value) =>
+                                setForm((prev) => ({ ...prev, businessEntityType: value }))
+                            }
                         >
                             <SelectTrigger className="mt-1 py-5.5">
                                 <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem className="py-2" value="web">Web</SelectItem>
-                                <SelectItem className="py-2" value="mobile">Mobile</SelectItem>
-                                <SelectItem className="py-2" value="both">Both</SelectItem>
+                                <SelectItem value="SOLE_PROPRIETOR">Sole Proprietor</SelectItem>
+                                <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
+                                <SelectItem value="PVT_LTD">Private Limited</SelectItem>
+                                <SelectItem value="LLP">LLP</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* VPA */}
+                    {/* Pay-in / API basics */}
                     <InputField
-                        label="UPI VPA"
-                        name="vpa"
-                        value={form.vpa}
+                        label="Website / App Domain"
+                        name="website"
+                        value={form.website}
                         handleChange={handleChange}
-                        htmlFor="vpa"
-                        placeholder="Enter VPA"
+                        htmlFor="website"
+                        placeholder="https://example.com"
                         required
                     />
 
-                    {/* Domain */}
                     <InputField
-                        label="Merchant Domain"
-                        name="merchantDomain"
-                        value={form.merchantDomain}
-                        handleChange={handleChange}
-                        htmlFor="merchantDomain"
-                        placeholder="Enter merchant domain"
-                        required
-                    />
-
-                    {/* IP Address */}
-                    <InputField
-                        label="IP Address"
-                        name="ipAddress"
-                        value={form.ipAddress}
-                        handleChange={handleChange}
-                        htmlFor="ipAddress"
-                        placeholder="Enter IP address"
-                        required
-                    />
-
-                    {/* Transaction Limit */}
-                    <InputField
-                        label="Per Transaction Limit"
+                        label="Per Transaction Limit (₹)"
                         type="number"
                         name="perTransactionLimit"
                         value={form.perTransactionLimit}
                         handleChange={handleChange}
                         htmlFor="perTransactionLimit"
-                        placeholder="Enter transaction limit"
+                        placeholder="Eg. 50000"
                         required
                     />
 
+                    <InputField
+                        label="Callback URL (UAT)"
+                        name="callbackUrlUat"
+                        value={form.callbackUrlUat}
+                        handleChange={handleChange}
+                        htmlFor="callbackUrlUat"
+                        placeholder="https://uat.example.com/payments/callback"
+                    />
+                    <InputField
+                        label="Callback URL (PROD)"
+                        name="callbackUrlProd"
+                        value={form.callbackUrlProd}
+                        handleChange={handleChange}
+                        htmlFor="callbackUrlProd"
+                        placeholder="https://example.com/payments/callback"
+                    />
+
+                    {/* Mode Switch Permission */}
+                    <div>
+                        <Label>
+                            Allow merchant to switch modes?
+                            <span className="text-red-500">&nbsp;*</span>
+                        </Label>
+                        <Select
+                            value={form.canSwitchMode}
+                            onValueChange={(value) =>
+                                setForm((prev) => ({ ...prev, canSwitchMode: value }))
+                            }
+                        >
+                            <SelectTrigger className="mt-1 py-5.5">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="yes">Yes (UAT & PROD toggle)</SelectItem>
+                                <SelectItem value="no">
+                                    No (Admin controls mode only)
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="col-span-2 flex justify-end gap-3 mt-4">
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)} className="p-6">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setOpen(false)}
+                            className="px-6"
+                        >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={mutation.isPending} className="py-6">
+                        <Button type="submit" disabled={mutation.isPending} className="px-6">
                             {mutation.isPending ? "Creating..." : "Create Merchant"}
                         </Button>
                     </div>

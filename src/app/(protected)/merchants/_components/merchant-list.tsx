@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -20,94 +25,164 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Filter, Plus, Search } from "lucide-react";
+import { Filter, Plus, Search, LogIn } from "lucide-react";
 import AddMerchantDialog from "./dialogs/add-merchant";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
-type Merchant = {
-    _id: string | number;
-    business: { legalName: string };
-    personal: { name: string; email: string };
+type MerchantRow = {
+    _id: string;
+    merchantId: string;
+    merchantName: string;
+    businessName: string;
+    email: string;
+    phone: string;
     businessEntityType: string;
-    status: string;
+    status: "pending" | "approved" | "rejected";
+    activeMode: "UAT" | "PROD";
+    canSwitchMode: boolean;
     createdAt: string;
 };
 
-async function fetchMerchants({
-    page,
-    search,
-    status,
-}: {
+async function fetchMerchants(params: {
     page: number;
     search: string;
     status: string;
 }) {
-    const params = new URLSearchParams({
-        page: String(page),
+    const qs = new URLSearchParams({
+        page: String(params.page),
         limit: "10",
-        search,
-        status
+        search: params.search,
+        status: params.status,
     });
-    const res = await fetch(`/api/merchants?${params}`);
+
+    const res = await fetch(`/api/merchants?${qs.toString()}`, {
+        credentials: "include",
+    });
     if (!res.ok) throw new Error("Failed to fetch merchants");
     return res.json();
 }
 
-export default function MerchantsTable() {
+export default function MerchantList() {
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
     const [showAddMerchantDialog, setShowAddMerchantDialog] = useState(false);
+    const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
         queryKey: ["merchants", page, searchTerm, statusFilter],
         queryFn: () => fetchMerchants({ page, search: searchTerm, status: statusFilter }),
     });
 
-    const merchants: Merchant[] = data?.data || [];
+    const merchants: MerchantRow[] = data?.data || [];
     const total = data?.total || 0;
     const limit = data?.limit || 10;
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
-    const toggleAddMerchantDialog = () => {
-        setShowAddMerchantDialog(!showAddMerchantDialog);
+    const toggleAddMerchantDialog = () => setShowAddMerchantDialog((v) => !v);
+
+    // ---- Admin -> Login as Merchant ----
+    const impersonateMutation = useMutation({
+        mutationFn: async (merchantId: string) => {
+            const res = await fetch("/api/merchants/impersonate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ merchantId }),
+            });
+            if (!res.ok) throw new Error("Failed to impersonate");
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success("Logged in as merchant");
+            window.location.href = "/";
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Impersonation failed");
+        },
+    });
+
+    const updateMerchantMutation = useMutation({
+        mutationFn: async (payload: Partial<MerchantRow> & { merchantId: string }) => {
+            const res = await fetch("/api/merchants", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error("Update failed");
+            return res.json();
+        },
+        onSuccess: () => {
+            toast.success("Merchant updated");
+            queryClient.invalidateQueries({ queryKey: ["merchants"] });
+        },
+        onError: (err: any) => {
+            toast.error(err.message || "Update failed");
+        },
+    });
+
+    const handleToggleCanSwitch = (row: MerchantRow) => {
+        updateMerchantMutation.mutate({
+            merchantId: row.merchantId,
+            canSwitchMode: !row.canSwitchMode,
+        });
+    };
+
+    const handleStatusChange = (row: MerchantRow, nextStatus: string) => {
+        updateMerchantMutation.mutate({
+            merchantId: row.merchantId,
+            status: nextStatus as any,
+        });
     };
 
     return (
         <>
             <div className="space-y-4">
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <div className="flex flex-col sm:flex-row gap-4 sm:justify-between">
+                    <div className="relative flex-1 max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input
                             placeholder="Search merchants..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 py-6 max-w-[250px]"
-                            data-testid="input-search-merchants"
+                            onChange={(e) => {
+                                setPage(1);
+                                setSearchTerm(e.target.value);
+                            }}
+                            className="pl-10 py-6"
                         />
                     </div>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full sm:w-[180px] py-6" data-testid="select-status-filter">
-                            <Filter className="h-4 w-4" />
-                            <SelectValue placeholder="Filter by status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem className="py-3" value="all">All Status</SelectItem>
-                            <SelectItem className="py-3" value="pending">Pending</SelectItem>
-                            <SelectItem className="py-3" value="approved">Approved</SelectItem>
-                            <SelectItem className="py-3" value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                    </Select>
 
-                    <Button
-                        onClick={toggleAddMerchantDialog}
-                        data-testid="button-create-merchant"
-                        className="py-6 cursor-pointer text-[15px]"
-                    >
-                        Add Merchant
-                        <Plus className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Select
+                            value={statusFilter}
+                            onValueChange={(val) => {
+                                setPage(1);
+                                setStatusFilter(val);
+                            }}
+                        >
+                            <SelectTrigger className="w-full sm:w-[180px] py-6">
+                                <Filter className="h-4 w-4 mr-2" />
+                                <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="approved">Approved</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Button
+                            onClick={toggleAddMerchantDialog}
+                            className="py-6 cursor-pointer text-[15px]"
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Merchant
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Table */}
@@ -124,48 +199,83 @@ export default function MerchantsTable() {
                                     <TableHeader>
                                         <TableRow className="bg-primary hover:bg-primary">
                                             <TableHead className="text-white">S No</TableHead>
+                                            <TableHead className="text-white">Merchant ID</TableHead>
                                             <TableHead className="text-white">Business Name</TableHead>
-                                            <TableHead className="text-white">Owner</TableHead>
-                                            <TableHead className="text-white">Email</TableHead>
-                                            <TableHead className="text-white">Type</TableHead>
+                                            <TableHead className="text-white">Owner Email</TableHead>
+                                            <TableHead className="text-white">Mode</TableHead>
+                                            <TableHead className="text-white">Can Switch</TableHead>
                                             <TableHead className="text-white">Status</TableHead>
                                             <TableHead className="text-white">Created</TableHead>
+                                            <TableHead className="text-white">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {merchants.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                                                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
                                                     No merchants found.
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
                                             merchants.map((m, i) => (
                                                 <TableRow key={m._id}>
-                                                    <TableCell className="py-4">{(page - 1) * limit + i + 1}</TableCell>
-                                                    <TableCell>{m.business.legalName}</TableCell>
-                                                    <TableCell>{m.personal.name}</TableCell>
-                                                    <TableCell>{m.personal.email}</TableCell>
-                                                    <TableCell className="capitalize">
-                                                        {m.businessEntityType.split("_").join(" ")}
+                                                    <TableCell className="py-3">
+                                                        {(page - 1) * limit + i + 1}
                                                     </TableCell>
+                                                    <TableCell className="font-mono text-xs font-bold">
+                                                        {m.merchantId}
+                                                    </TableCell>
+                                                    <TableCell>{m.businessName || m.merchantName}</TableCell>
+                                                    <TableCell>{m.email}</TableCell>
+
                                                     <TableCell>
-                                                        <span
-                                                            className={`capitalize px-2 py-1 rounded text-xs font-medium 
-                                                            ${m.status === "approved" ? "bg-green-100 text-green-800"
-                                                                    : m.status === "rejected" ? "bg-red-100 text-red-800"
-                                                                        : "bg-yellow-100 text-yellow-800"
-                                                                }`}
-                                                        >
-                                                            {m.status}
+                                                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100">
+                                                            {m.activeMode}
                                                         </span>
                                                     </TableCell>
+
+                                                    <TableCell className="flex mt-1.5 mr-1 justify-center">
+                                                        <Switch
+                                                            checked={m.canSwitchMode}
+                                                            onCheckedChange={() => handleToggleCanSwitch(m)}
+                                                        />
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        <Select
+                                                            value={m.status}
+                                                            onValueChange={(val) => handleStatusChange(m, val)}
+                                                        >
+                                                            <SelectTrigger className="h-8 w-[120px] text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="pending">Pending</SelectItem>
+                                                                <SelectItem value="approved">Approved</SelectItem>
+                                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableCell>
+
                                                     <TableCell>
                                                         {new Date(m.createdAt).toLocaleDateString("en-IN", {
                                                             year: "numeric",
                                                             month: "short",
                                                             day: "2-digit",
                                                         })}
+                                                    </TableCell>
+
+                                                    <TableCell>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                                impersonateMutation.mutate(m.merchantId)
+                                                            }
+                                                        >
+                                                            <LogIn className="h-4 w-4 mr-1" />
+                                                            Login
+                                                        </Button>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
@@ -176,7 +286,7 @@ export default function MerchantsTable() {
                         )}
 
                         {/* Pagination */}
-                        <div className="flex justify-between items-center mt-6 relative">
+                        <div className="flex justify-between items-center mt-6">
                             <Button
                                 className="py-5"
                                 variant="outline"
@@ -199,10 +309,13 @@ export default function MerchantsTable() {
                         </div>
                     </CardContent>
                 </Card>
-
             </div>
+
             {/* Add Merchant */}
-            <AddMerchantDialog open={showAddMerchantDialog} setOpen={setShowAddMerchantDialog} />
+            <AddMerchantDialog
+                open={showAddMerchantDialog}
+                setOpen={setShowAddMerchantDialog}
+            />
         </>
     );
 }

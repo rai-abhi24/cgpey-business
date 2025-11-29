@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IWebhook extends Document {
+    merchantId?: string;
     gateway: string;
     event: string;
     state?: string;
@@ -15,8 +16,9 @@ export interface IWebhook extends Document {
 
 const WebhookSchema = new Schema<IWebhook>(
     {
-        gateway: { type: String, index: true },
-        event: { type: String, index: true },
+        merchantId: { type: String, index: true },
+        gateway: { type: String },
+        event: { type: String },
         state: { type: String },
         signatureHash: { type: String, unique: true, sparse: true },
         payload: { type: Schema.Types.Mixed },

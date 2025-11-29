@@ -1,16 +1,22 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
-/* -------------------------------------------------------------
-   1️⃣ Enums for controlled states — used across the platform
-------------------------------------------------------------- */
+export enum Gateway {
+    PHONEPE = "PHONEPE",
+}
+
 export enum PaymentState {
-    CREATED = "CREATED",
     PENDING = "PENDING",
-    SUCCESS = "SUCCESS",
+    COMPLETED = "COMPLETED",
     FAILED = "FAILED",
     EXPIRED = "EXPIRED",
-    CANCELLED = "CANCELLED",
-    UNKNOWN = "UNKNOWN",
+}
+
+export enum PaymentMode {
+    UPI_QR = "UPI_QR",
+    UPI_INTENT = "UPI_INTENT",
+    UPI_COLLECT = "UPI_COLLECT",
+    NET_BANKING = "NET_BANKING",
+    CARD = "CARD",
 }
 
 export enum CheckoutType {
@@ -18,116 +24,141 @@ export enum CheckoutType {
     CUSTOM = "CUSTOM",
 }
 
-export enum RefundState {
-    PENDING = "PENDING",
-    COMPLETED = "COMPLETED",
-    FAILED = "FAILED",
-}
-
-/* -------------------------------------------------------------
-   2️⃣ TypeScript Interface for document typing
-------------------------------------------------------------- */
 export interface IPayment extends Document {
-    paymentId: string; // internal system id for tracking
+    _id: Types.ObjectId;
+    paymentId: string;
     merchantOrderId: string;
-    merchantId?: string;
+    merchantId: Types.ObjectId; // ref Merchant
+    orderMetaInfo?: Record<string, any>;
 
-    gateway: string;
-    gatewayTxnId?: string;
-    idempotencyKey?: string;
-
+    paymentMode: PaymentMode;
     amount: number;
     currency: string;
     state: PaymentState;
-    checkoutType: CheckoutType;
 
-    meta?: Record<string, any>;
-    metaInfo?: Record<string, any>;
+    upi?: {
+        type?: string;
+        utr?: string;
+        upiTransactionId?: string;
+        vpa?: string;
+    };
+
+    gateway: Gateway;
+    gatewayTxnId?: string;
+    idempotencyKey?: string;
+    checkoutType: CheckoutType;
 
     gatewayResponse?: Record<string, any>;
     webhookApplied: boolean;
 
-    refund?: {
-        refundId?: string;
-        amount?: number;
-        state?: RefundState | null;
-        meta?: Record<string, any>;
-        initiatedAt?: Date;
-        completedAt?: Date;
-    };
+    initiatedAt?: Date;
+    completedAt?: Date;
 
-    createdAt?: Date;
-    updatedAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
-/* -------------------------------------------------------------
-   3️⃣ Sub-schema for better structure
-------------------------------------------------------------- */
-const RefundSchema = new Schema(
-    {
-        refundId: { type: String, index: true },
-        amount: { type: Number },
-        state: {
-            type: String,
-            enum: Object.values(RefundState),
-            default: null,
-            index: true,
-        },
-        meta: { type: Schema.Types.Mixed },
-        initiatedAt: { type: Date },
-        completedAt: { type: Date },
-    },
-    { _id: false }
-);
-
-/* -------------------------------------------------------------
-   4️⃣ Main Payment Schema
-------------------------------------------------------------- */
 const PaymentSchema = new Schema<IPayment>(
     {
-        // Core identifiers
-        paymentId: { type: String, index: true },
-        merchantOrderId: { type: String, required: true, index: true },
-        merchantId: { type: String, index: true },
+        paymentId: {
+            type: String,
+            required: true,
+            unique: true,
+        },
 
-        // Gateway info
-        gateway: { type: String, required: true, index: true },
-        gatewayTxnId: { type: String, unique: true, sparse: true },
-        idempotencyKey: { type: String, unique: true, sparse: true },
+        merchantOrderId: {
+            type: String,
+            required: true,
+        },
 
-        amount: { type: Number, required: true },
-        currency: { type: String, default: "INR" },
+        merchantId: {
+            type: Schema.Types.ObjectId,
+            ref: "Merchant",
+            required: true,
+            index: true,
+        },
+
+        orderMetaInfo: {
+            type: Schema.Types.Mixed,
+        },
+
+        paymentMode: {
+            type: String,
+            enum: Object.values(PaymentMode),
+            required: true,
+        },
+
+        amount: {
+            type: Number,
+            required: true,
+        },
+
+        currency: {
+            type: String,
+            default: "INR",
+        },
 
         state: {
             type: String,
             enum: Object.values(PaymentState),
-            default: PaymentState.CREATED,
+            default: PaymentState.PENDING,
             index: true,
         },
+
+        upi: {
+            type: {
+                type: String,
+                enum: ["UPI"],
+            },
+            utr: { type: String, index: true },
+            upiTransactionId: { type: String },
+            vpa: { type: String },
+        },
+
+        gateway: {
+            type: String,
+            enum: Object.values(Gateway),
+            required: true,
+        },
+
+        gatewayTxnId: { type: String, index: true },
+
+        idempotencyKey: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+
         checkoutType: {
             type: String,
             enum: Object.values(CheckoutType),
             default: CheckoutType.STANDARD,
-            index: true,
         },
 
-        meta: { type: Schema.Types.Mixed },
-        metaInfo: { type: Schema.Types.Mixed },
+        gatewayResponse: {
+            type: Schema.Types.Mixed,
+        },
 
-        gatewayResponse: { type: Schema.Types.Mixed },
-        webhookApplied: { type: Boolean, default: false },
-        refund: RefundSchema,
+        webhookApplied: {
+            type: Boolean,
+            default: false,
+        },
+
+        initiatedAt: Date,
+        completedAt: Date,
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+    }
 );
 
-/* -------------------------------------------------------------
-   5️⃣ Indexes for performance
-------------------------------------------------------------- */
+PaymentSchema.index({ merchantId: 1, state: 1 });
 PaymentSchema.index({ createdAt: -1 });
+PaymentSchema.index({ updatedAt: -1 });
+PaymentSchema.index(
+    { merchantId: 1, merchantOrderId: 1 },
+    { unique: true }
+);
 
-/* -------------------------------------------------------------
-   6️⃣ Export Model
-------------------------------------------------------------- */
 export const Payment =
     mongoose.models.Payment || mongoose.model<IPayment>("Payment", PaymentSchema);

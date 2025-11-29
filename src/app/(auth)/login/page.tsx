@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
-import { KeyRound, ArrowRight } from "lucide-react";
+import { KeyRound, ArrowRight, Edit } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -21,18 +21,13 @@ export default function LoginPage() {
     // Send OTP Mutation
     const sendOtpMutation = useMutation({
         mutationFn: async () => {
-            // const res = await fetch("/api/send-otp", {
-            //     method: "POST",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify({ phone }),
-            // });
-
-            // if (!res.ok) {
-            //     const errorData = await res.json();
-            //     throw new Error(errorData.message || "Failed to send OTP");
-            // }
-
-            // return res.json();
+            const res = await fetch("/api/auth/send-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: phoneNumber }),
+            });
+            if (!res.ok) throw new Error((await res.json()).message);
+            return res.json();
         },
         onSuccess: () => {
             toast.success("OTP sent successfully!");
@@ -43,12 +38,19 @@ export default function LoginPage() {
         },
     });
 
-    // Verify OTP Mutation
     const verifyOtpMutation = useMutation({
-        mutationFn: async () => { },
+        mutationFn: async () => {
+            const otpString = otp.join("");
+            const res = await fetch("/api/auth/verify-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: phoneNumber, otp: otpString }),
+            });
+            if (!res.ok) throw new Error((await res.json()).message);
+            return res.json();
+        },
         onSuccess: () => {
             toast.success("Login successful!");
-            localStorage.setItem("token", "123");
             router.push("/");
         },
         onError: (error: any) => {
@@ -94,6 +96,10 @@ export default function LoginPage() {
         }
     };
 
+    const maskPhoneNumber = (phone: string) => {
+        return `+91 *******${phone.slice(7, 10)}`;
+    };
+
     return (
         <div className="min-h-screen relative overflow-hidden">
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-between px-4 py-8">
@@ -124,8 +130,22 @@ export default function LoginPage() {
                             </CardTitle>
                             <p className="text-sm text-gray-600 text-center">
                                 {step === "phone"
-                                    ? "Enter your mobile number to continue"
-                                    : `We've sent a code to ${phoneNumber}`}
+                                    ? (<span>Enter your mobile number to continue</span>)
+                                    : (
+                                        <span
+                                            className="flex justify-center cursor-pointer"
+                                            onClick={() => {
+                                                setStep("phone");
+                                                setOtp(["", "", "", "", "", ""]);
+                                            }}
+                                        >
+                                            We&apos;ve sent a code to&nbsp;
+                                            <span className="font-bold text-primary flex underline underline-offset-4">
+                                                {maskPhoneNumber(phoneNumber)}
+                                                <Edit className="h-4 w-4 mt-0.5 ml-2" />
+                                            </span>
+                                        </span>
+                                    )}
                             </p>
                         </CardHeader>
 
@@ -242,7 +262,7 @@ export default function LoginPage() {
                                             )}
                                         </Button>
 
-                                        <button
+                                        {/* <button
                                             type="button"
                                             onClick={() => {
                                                 setStep("phone");
@@ -251,7 +271,7 @@ export default function LoginPage() {
                                             className="w-full text-sm text-gray-600 hover:text-gray-800 transition-colors"
                                         >
                                             ← Change mobile number
-                                        </button>
+                                        </button> */}
                                     </motion.div>
                                 )}
                             </AnimatePresence>

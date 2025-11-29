@@ -1,14 +1,73 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 
-const UserSchema = new Schema(
+export type UserRole = "ADMIN" | "MERCHANT";
+
+export interface IUser extends Document {
+    _id: Types.ObjectId;
+    userId: string;
+
+    email?: string;
+    phone?: string;
+    passwordHash?: string;
+    role: UserRole;
+
+    merchantId?: Types.ObjectId | null;
+
+    lastLoginAt?: Date;
+    isActive: boolean;
+
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const UserSchema = new Schema<IUser>(
     {
-        name: { type: String },
-        phone: { type: String, unique: true, required: true },
-        role: { type: String, default: "user" },
-        otp: { type: String },
-        otpExpiresAt: { type: Date },
+        userId: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+        },
+
+        email: {
+            type: String,
+            unique: true,
+            sparse: true,
+            lowercase: true,
+            trim: true,
+        },
+
+        phone: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+        },
+
+        passwordHash: { type: String },
+
+        role: {
+            type: String,
+            enum: ["ADMIN", "MERCHANT"],
+            required: true,
+            index: true,
+        },
+
+        merchantId: {
+            type: Schema.Types.ObjectId,
+            ref: "Merchant",
+            default: null,
+            index: true,
+        },
+
+        lastLoginAt: { type: Date },
+
+        isActive: { type: Boolean, default: true },
     },
     { timestamps: true }
 );
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+UserSchema.index({ merchantId: 1, role: 1 });
+
+export const User =
+    mongoose.models.User || mongoose.model<IUser>("User", UserSchema);

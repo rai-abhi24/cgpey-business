@@ -1,11 +1,14 @@
 import MerchantList from "./_components/merchant-list";
 import HeaderSetter from "@/components/common/header-setter";
 
-export default function page() {
+export default function MerchantsPage() {
     return (
-        <div>
-            <HeaderSetter title="Merchants" desc="Manage all merchants" />
+        <div className="space-y-4">
+            <HeaderSetter
+                title="Merchants"
+                desc="Onboard, manage & impersonate merchants"
+            />
             <MerchantList />
-        </div >
-    )
+        </div>
+    );
 }

@@ -67,7 +67,7 @@ export function TransactionFilters({ filters, onChange, onExport, exporting, env
                     <Button variant="outline" size="sm" onClick={handleReset}>
                         <RotateCw className="mr-2 h-4 w-4" /> Reset
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={onExport} disabled={exporting}>
+                    <Button variant="secondary" size="sm" onClick={onExport} disabled={true || exporting} className={`cursor-not-allowed`}>
                         <Download className="mr-2 h-4 w-4" />
                         {exporting ? "Preparing..." : "Export CSV"}
                     </Button>

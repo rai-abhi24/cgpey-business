@@ -31,6 +31,7 @@ const RefundSchema = new Schema<IRefund>(
             type: String,
             required: true,
             unique: true,
+            index: true,
         },
 
         merchantId: {
@@ -75,8 +76,6 @@ const RefundSchema = new Schema<IRefund>(
     },
     { timestamps: true }
 );
-
-RefundSchema.index({ refundId: 1 }, { unique: true });
 
 export const Refund =
     mongoose.models.Refund || mongoose.model<IRefund>("Refund", RefundSchema);

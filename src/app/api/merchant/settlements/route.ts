@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMerchantSession } from "@/lib/session/merchant";
+import { getSession } from "@/lib/session/session";
 import { listSettlements } from "@/lib/services/settlements";
 import { SettlementStatus } from "@/models/Settlement";
+import { ISession } from "@/types/session";
 
 export async function GET(req: NextRequest) {
-    const session = await getMerchantSession();
+    const session: ISession | null = await getSession();
     if (!session) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    if (!session.merchantId) return NextResponse.json({ success: false, message: "Invalid session" }, { status: 401 });
 
     try {
         const { searchParams } = new URL(req.url);

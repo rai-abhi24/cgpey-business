@@ -9,6 +9,7 @@ import { useServerTable } from "@/components/merchant/transactions/use-server-ta
 import { TransactionFilters, TransactionFilterState } from "@/components/merchant/transactions/transaction-filters";
 import { useSession } from "@/context/session-context";
 import { RefreshCw } from "lucide-react";
+import { ISession } from "@/types/session";
 
 interface TransactionRow {
     id: string;
@@ -25,7 +26,7 @@ interface TransactionRow {
 }
 
 export default function TransactionsList() {
-    const { session } = useSession();
+    const { session }: { session: ISession | null } = useSession();
     const [exporting, setExporting] = useState(false);
     const [filters, setFilters] = useState<TransactionFilterState>({
         search: "",
@@ -35,12 +36,12 @@ export default function TransactionsList() {
         dateTo: "",
         minAmount: "",
         maxAmount: "",
-        environment: session.currentMode,
+        environment: session?.currentMode ?? "live",
     });
 
     useEffect(() => {
-        setFilters((prev) => ({ ...prev, environment: session.currentMode }));
-    }, [session.currentMode]);
+        setFilters((prev) => ({ ...prev, environment: session?.currentMode ?? "live" }));
+    }, [session?.currentMode]);
 
     const { rows, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } = useServerTable<TransactionRow, TransactionFilterState>({
         endpoint: "/api/merchant/transactions",
@@ -81,7 +82,7 @@ export default function TransactionsList() {
                 onChange={handleFilterChange}
                 onExport={handleExport}
                 exporting={exporting}
-                environments={session.allowedModes}
+                environments={session?.allowedModes || []}
             />
 
             <Card>

@@ -78,10 +78,10 @@ export default function ProfilePage() {
         },
     });
 
-    const mask = (str: string) => {
-        if (!str) return "";
-        return str.slice(0, 6) + "••••••" + str.slice(-4);
-    };
+    // const mask = (str: string) => {
+    //     if (!str) return "";
+    //     return str.slice(0, 6) + "••••••" + str.slice(-4);
+    // };
 
     const copy = (txt: string, field: string) => {
         navigator.clipboard.writeText(txt);

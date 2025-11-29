@@ -98,8 +98,5 @@ const MerchantSchema = new Schema<IMerchant>(
     { timestamps: true }
 );
 
-MerchantSchema.index({ email: 1 });
-MerchantSchema.index({ phone: 1 });
-
 export const Merchant =
     mongoose.models.Merchant || mongoose.model<IMerchant>("Merchant", MerchantSchema);

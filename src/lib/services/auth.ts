@@ -1,5 +1,5 @@
 import ApiClient from "../client";
-import type { MerchantAccountSummary, MerchantSession } from "@/types/session";
+import type { MerchantAccountSummary, ISession } from "@/types/session";
 
 export async function sendOTP(phoneNumber: string): Promise<{ success: boolean }> {
     return ApiClient.post<{ success: boolean }>("/auth/send-otp", { phone: phoneNumber });
@@ -10,7 +10,7 @@ export async function verifyOTP(phoneNumber: string, otp: string): Promise<{ suc
 }
 
 export async function me() {
-    return ApiClient.get<{ success: boolean; user: MerchantAccountSummary | null; merchant: MerchantSession | null }>("/me");
+    return ApiClient.get<{ success: boolean; user: MerchantAccountSummary | null; merchant: ISession | null }>("/me");
 }
 
 export async function logout() {

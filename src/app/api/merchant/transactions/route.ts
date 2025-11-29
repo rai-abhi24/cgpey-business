@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session/session";
 import { fetchMerchantTransactions } from "@/lib/services/transactions";
 import { transactionFiltersSchema } from "@/validations/merchant";
+import { ISession } from "@/types/session";
 
 export async function GET(req: NextRequest) {
-    const session = await getSession();
+    const session: ISession | null = await getSession();
     if (!session) {
         return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!session.merchantId) {
+        return NextResponse.json({ success: false, message: "Invalid session" }, { status: 401 });
     }
 
     try {

@@ -1,4 +1,3 @@
-// src/models/report.model.ts
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 export enum ReportType {

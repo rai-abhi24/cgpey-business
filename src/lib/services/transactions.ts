@@ -41,7 +41,7 @@ export async function fetchMerchantTransactions(merchantId: string, filters: Tra
         )
         .lean();
 
-    const nextCursor = documents.length === limit ? documents[documents.length - 1]._id.toString() : null;
+    const nextCursor = documents.length === limit ? (documents[documents.length - 1] as any)._id.toString() : null;
 
     const metrics = await aggregateMetrics(baseFilter);
 

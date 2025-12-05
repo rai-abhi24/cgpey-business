@@ -649,7 +649,7 @@ export default function CheckoutPage() {
                         )}
 
                         {/* Security Badge */}
-                        <Card>
+                        {/* <Card>
                             <CardContent className="py-4 text-sm space-y-3">
                                 <div className="flex items-center gap-2 text-gray-700">
                                     <ShieldCheck className="h-5 w-5 text-green-600" />
@@ -663,7 +663,7 @@ export default function CheckoutPage() {
                                     Your payment information is encrypted and secure. We never store your card details.
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card> */}
                     </div>
                 </div>
             </div>

@@ -410,20 +410,6 @@ export default function ProfilePage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="webhook-enabled" className="text-base">Enable Webhooks</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Receive real-time payment updates on your server
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        id="webhook-enabled"
-                                        checked={webhookForm.enabled}
-                                        onCheckedChange={(checked) => setWebhookForm({ ...webhookForm, enabled: checked })}
-                                    />
-                                </div>
-
                                 {webhookForm.enabled && (
                                     <div className="space-y-4 pt-4 border-t">
                                         <div>
@@ -439,59 +425,6 @@ export default function ProfilePage() {
                                             />
                                             <p className="text-sm text-muted-foreground mt-1">
                                                 We&apos;ll send POST requests to this URL with payment status updates
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="webhook-secret">Webhook Secret</Label>
-                                            <div className="flex gap-2 mt-2">
-                                                <div className="relative flex-1">
-                                                    <Input
-                                                        id="webhook-secret"
-                                                        type={visible.webhookSecret ? "text" : "password"}
-                                                        value={visible.webhookSecret ? webhookForm.secret : "••••••••••••••••"}
-                                                        readOnly
-                                                        className="font-mono py-6"
-                                                    />
-                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => setVisible({ ...visible, webhookSecret: !visible.webhookSecret })}
-                                                        >
-                                                            {visible.webhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => copyToClipboard(webhookForm.secret, "webhookSecret")}
-                                                        >
-                                                            {copied === "webhookSecret" ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                                <Button variant="outline" onClick={generateSecret} className="py-6">
-                                                    Generate
-                                                </Button>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Use this secret to verify webhook signatures in your server
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="max-retries">Max Retry Attempts</Label>
-                                            <Input
-                                                id="max-retries"
-                                                type="number"
-                                                min="1"
-                                                max="5"
-                                                value={webhookForm.maxRetries}
-                                                onChange={(e) => setWebhookForm({ ...webhookForm, maxRetries: parseInt(e.target.value) || 3 })}
-                                                className="py-6 mt-2"
-                                            />
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Number of times we&apos;ll retry if your webhook endpoint fails
                                             </p>
                                         </div>
                                     </div>

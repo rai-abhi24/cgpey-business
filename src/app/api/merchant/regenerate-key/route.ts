@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session/session";
 import { connectDB } from "@/lib/mongo";
 import { Merchant } from "@/models";
-import crypto from "crypto";
 import { ISession } from "@/types/session";
+import { generateApiKey, generateSecretKey } from "@/lib/crypto";
 
 export async function POST(req: NextRequest) {
     const session: ISession | null = await getSession();
@@ -18,9 +18,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     const newKey =
-        keyType === "public"
-            ? `api_` + crypto.randomBytes(16).toString("hex")
-            : `sec_` + crypto.randomBytes(32).toString("hex");
+        keyType === "public" ? generateApiKey(env as "uat" | "prod") : generateSecretKey(env as "uat" | "prod");
 
     const update = {
         $set: {

@@ -163,7 +163,7 @@ function sumAmounts(arr = []) {
 
 function successRate(arr = []) {
     const total = sumCounts(arr);
-    const s = (arr as any[]).find((r: any) => r._id === "COMPLETED")?.count || 0;
+    const s = (arr as any[]).find((r: any) => r._id === "SUCCESS")?.count || 0;
     return total ? ((s / total) * 100).toFixed(2) : 0;
 }
 

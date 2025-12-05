@@ -1,26 +1,15 @@
 import React from 'react'
 import {
   ArrowRight,
-  // CheckCircle,
   CreditCard,
   ExternalLink,
   Loader2,
-  Lock,
 } from 'lucide-react'
 
 const CardForm = ({ amount, onSubmit, isProcessing }: any) => {
   const handleSubmit = () => {
     onSubmit({ paymentMode: 'CARD' })
   }
-
-  const cardFeatures = [
-    // { icon: <Shield className="h-4 w-4" />, text: "PCI DSS Compliant" },
-    { icon: <Lock className="h-4 w-4" />, text: '256-bit SSL Encryption' },
-    // {
-    //   icon: <CheckCircle className="h-4 w-4" />,
-    //   text: '3D Secure Authentication',
-    // },
-  ]
 
   return (
     <div className="space-y-4">
@@ -39,26 +28,6 @@ const CardForm = ({ amount, onSubmit, isProcessing }: any) => {
               details
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Security Features */}
-      <div className="bg-white rounded-xl p-4 border-2 border-gray-100">
-        <p className="text-xs font-semibold text-gray-900 mb-3">
-          Security Features
-        </p>
-        <div className="space-y-2.5">
-          {cardFeatures.map((feature, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-2.5 text-gray-700"
-            >
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
-                {feature.icon}
-              </div>
-              <span className="text-sm">{feature.text}</span>
-            </div>
-          ))}
         </div>
       </div>
 

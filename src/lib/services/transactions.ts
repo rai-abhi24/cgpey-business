@@ -148,7 +148,7 @@ async function aggregateMetrics(filter: Record<string, any>) {
                 totalCount: { $sum: 1 },
                 successCount: {
                     $sum: {
-                        $cond: [{ $eq: ["$state", PaymentState.COMPLETED] }, 1, 0],
+                        $cond: [{ $eq: ["$state", PaymentState.SUCCESS] }, 1, 0],
                     },
                 },
             },

@@ -5,7 +5,7 @@ import { PaymentState } from "@/models/Payment";
 describe("merchant insights helpers", () => {
     it("computes aggregate totals correctly", () => {
         const totals = aggregateTotals([
-            { _id: PaymentState.COMPLETED, amount: 1000, count: 4 },
+            { _id: PaymentState.SUCCESS, amount: 1000, count: 4 },
             { _id: PaymentState.FAILED, amount: 500, count: 2 },
         ]);
 

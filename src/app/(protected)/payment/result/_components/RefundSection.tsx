@@ -4,7 +4,7 @@ import { Clock, CreditCard, Loader2, RefreshCcw } from "lucide-react";
 import { RefundData } from "./PaymentResultClient";
 import { Badge } from "@/components/ui/badge";
 
-const TERMINAL_REFUND_STATES = ["COMPLETED", "FAILED", "SUCCESS", "FAILED"];
+const TERMINAL_REFUND_STATES = ["FAILED", "SUCCESS", "FAILED"];
 
 export default function RefundSection({
     refund,

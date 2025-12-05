@@ -1,9 +1,9 @@
 import crypto from "crypto";
 
-export function generateApiKey(): string {
-    return "api_" + crypto.randomBytes(16).toString("hex");
+export function generateApiKey(env: "uat" | "prod"): string {
+    return `pk_${env === "uat" ? "uat" : "live"}_` + crypto.randomBytes(16).toString("hex");
 }
 
-export function generateSecretKey(): string {
-    return "sec_" + crypto.randomBytes(32).toString("hex");
+export function generateSecretKey(env: "uat" | "prod"): string {
+    return `sk_${env === "uat" ? "uat" : "live"}_` + crypto.randomBytes(32).toString("hex");
 }

@@ -120,7 +120,7 @@ export async function fetchMerchantInsights(merchantId: string, activeMode: Merc
     }));
 
     const failures = stateSplit
-        .filter((state: { state: string }) => state.state !== PaymentState.COMPLETED)
+        .filter((state: { state: string }) => state.state !== PaymentState.SUCCESS)
         .map((state: any) => ({ label: state.state, count: state.count }));
 
     return {
@@ -141,7 +141,7 @@ export async function fetchMerchantInsights(merchantId: string, activeMode: Merc
 export function aggregateTotals(rows: Array<{ _id: string; amount: number; count: number }>) {
     const totalVolume = rows.reduce((acc, row) => acc + (row.amount || 0), 0);
     const totalCount = rows.reduce((acc, row) => acc + (row.count || 0), 0);
-    const successRow = rows.find((row) => row._id === PaymentState.COMPLETED);
+    const successRow = rows.find((row) => row._id === PaymentState.SUCCESS);
     const successCount = successRow?.count || 0;
     const successAmount = successRow?.amount || 0;
     const successRate = totalCount ? (successCount / totalCount) * 100 : 0;

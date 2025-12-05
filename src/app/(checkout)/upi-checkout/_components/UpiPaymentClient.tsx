@@ -32,12 +32,12 @@ const UpiPaymentClient = () => {
             verifyPaymentStatus(body),
         onSuccess: (res: any) => {
             const state = res?.data?.data?.state;
-            if (state === "COMPLETED") {
+            if (state === "SUCCESS") {
                 setPaymentStatus("success");
             } else if (state === "FAILED") {
                 setPaymentStatus("failed");
             }
-            // If state is neither COMPLETED nor FAILED, continue polling
+            // If state is neither SUCCESS nor FAILED, continue polling
         },
         onError: (error: any) => {
             console.error("Payment verification error:", error);

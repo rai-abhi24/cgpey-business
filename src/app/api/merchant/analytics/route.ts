@@ -72,7 +72,7 @@ export async function GET() {
                     ],
 
                     failures: [
-                        { $match: { state: { $ne: PaymentState.COMPLETED } } },
+                        { $match: { state: { $ne: PaymentState.SUCCESS } } },
                         {
                             $group: {
                                 _id: "$state",

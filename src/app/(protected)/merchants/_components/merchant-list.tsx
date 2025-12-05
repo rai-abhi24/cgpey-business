@@ -25,8 +25,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Filter, Plus, Search, LogIn } from "lucide-react";
-import AddMerchantDialog from "./dialogs/add-merchant";
+import MerchantDialog from "./dialogs/MerchantDialog";
+import { Filter, Plus, Search, LogIn, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 
@@ -68,6 +68,8 @@ export default function MerchantList() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [showAddMerchantDialog, setShowAddMerchantDialog] = useState(false);
+    const [editingMerchant, setEditingMerchant] = useState<MerchantRow | null>(null);
+    const [showEditDialog, setShowEditDialog] = useState(false);
     const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
@@ -198,15 +200,15 @@ export default function MerchantList() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-primary hover:bg-primary">
-                                            <TableHead className="text-white">S No</TableHead>
-                                            <TableHead className="text-white">Merchant ID</TableHead>
-                                            <TableHead className="text-white">Business Name</TableHead>
-                                            <TableHead className="text-white">Owner Email</TableHead>
-                                            <TableHead className="text-white">Mode</TableHead>
-                                            <TableHead className="text-white">Can Switch</TableHead>
-                                            <TableHead className="text-white">Status</TableHead>
-                                            <TableHead className="text-white">Created</TableHead>
-                                            <TableHead className="text-white">Actions</TableHead>
+                                            <TableHead className="text-white text-nowrap">S No</TableHead>
+                                            <TableHead className="text-white text-nowrap">Merchant ID</TableHead>
+                                            <TableHead className="text-white text-nowrap">Business Name</TableHead>
+                                            <TableHead className="text-white text-nowrap">Owner Email</TableHead>
+                                            <TableHead className="text-white text-nowrap">Mode</TableHead>
+                                            <TableHead className="text-white text-nowrap">Can Switch</TableHead>
+                                            <TableHead className="text-white text-nowrap">Status</TableHead>
+                                            <TableHead className="text-white text-nowrap">Created</TableHead>
+                                            <TableHead className="text-white text-nowrap">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -225,8 +227,8 @@ export default function MerchantList() {
                                                     <TableCell className="font-mono text-xs font-bold">
                                                         {m.merchantId}
                                                     </TableCell>
-                                                    <TableCell>{m.businessName || m.merchantName}</TableCell>
-                                                    <TableCell>{m.email}</TableCell>
+                                                    <TableCell className="text-nowrap">{m.businessName || m.merchantName}</TableCell>
+                                                    <TableCell className="text-nowrap">{m.email}</TableCell>
 
                                                     <TableCell>
                                                         <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100">
@@ -257,7 +259,7 @@ export default function MerchantList() {
                                                         </Select>
                                                     </TableCell>
 
-                                                    <TableCell>
+                                                    <TableCell className="text-nowrap">
                                                         {new Date(m.createdAt).toLocaleDateString("en-IN", {
                                                             year: "numeric",
                                                             month: "short",
@@ -266,16 +268,28 @@ export default function MerchantList() {
                                                     </TableCell>
 
                                                     <TableCell>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() =>
-                                                                impersonateMutation.mutate(m.merchantId)
-                                                            }
-                                                        >
-                                                            <LogIn className="h-4 w-4 mr-1" />
-                                                            Login
-                                                        </Button>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="py-2 pr-2"
+                                                                onClick={() => {
+                                                                    setEditingMerchant(m);
+                                                                    setShowEditDialog(true);
+                                                                }}
+                                                            >
+                                                                <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                            </Button>
+
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => impersonateMutation.mutate(m.merchantId)}
+                                                            >
+                                                                <LogIn className="h-4 w-4 mr-1" />
+                                                                Login
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
@@ -312,10 +326,14 @@ export default function MerchantList() {
             </div>
 
             {/* Add Merchant */}
-            <AddMerchantDialog
-                open={showAddMerchantDialog}
-                setOpen={setShowAddMerchantDialog}
-            />
+            <MerchantDialog mode="add" open={showAddMerchantDialog} setOpen={setShowAddMerchantDialog} />
+            <MerchantDialog mode="edit" open={showEditDialog} setOpen={setShowEditDialog} initialData={editingMerchant} />
+
+            {/* <EditMerchantDialog
+                open={showEditDialog}
+                setOpen={setShowEditDialog}
+                initialData={editingMerchant}
+            /> */}
         </>
     );
 }

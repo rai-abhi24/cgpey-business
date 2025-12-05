@@ -102,7 +102,7 @@ export default function CheckoutPage() {
                 const state = response.data?.state || response.data?.data?.state || "PENDING";
 
                 // Terminal states
-                if (["SUCCESS", "COMPLETED", "FAILED", "CANCELLED", "EXPIRED"].includes(state)) {
+                if (["SUCCESS", "FAILED", "CANCELLED", "EXPIRED"].includes(state)) {
                     // Clear pending payment
                     localStorage.removeItem("pendingOrderId");
                     localStorage.removeItem("paymentMode");
@@ -112,7 +112,7 @@ export default function CheckoutPage() {
                     setPendingOrderId(null);
 
                     // Redirect to result page
-                    router.push(`/payment/result?orderId=${orderId}&amount=${amount}&status=${state === "SUCCESS" || state === "COMPLETED" ? "success" : "failed"
+                    router.push(`/payment/result?orderId=${orderId}&amount=${amount}&status=${state === "SUCCESS" ? "success" : "failed"
                         }`);
                     return;
                 }
